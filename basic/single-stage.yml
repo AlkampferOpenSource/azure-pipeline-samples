@@ -1,0 +1,59 @@
+name: 'Single stage sample build'  # build numbering format
+
+variables:
+  - name: configuration
+    value: "release"
+    readonly: false
+
+# Disable any trigger, remember if you do not use anything pipeline
+# trigger: none 
+
+# This is standard way to specify triggeres
+trigger:
+  batch: false # batch changes if true; start a new build for every push if false (default)
+  branches:
+    include: [ "master", "develop", "hotfix/*" ] # branch names which will trigger a build
+    exclude: [ "feature/*" ] # branch names which will not
+  tags:
+    include: [  ] # tag names which will trigger a build
+    exclude: [  ] # tag names which will not
+  paths:
+    include: [  ] # file paths which must match to trigger a build
+    exclude: [  ] # file paths which will not trigger a build
+
+# If you want to avoid for this pipeline to be triggere in PR, just specify
+# configuration here, a value of
+# pr: none
+# will completely disable this pipeline for pull requests   
+pr:
+  autoCancel: false # indicates whether additional pushes to a PR should cancel in-progress runs for the same PR. Defaults to true
+  branches:
+    include: [ develop ] # branch names which will trigger a build
+    exclude: [  ] # branch names which will not
+  paths:
+    include: [  ] # file paths which must match to trigger a build
+    exclude: [  ] # file paths which will not trigger a build
+
+parameters:
+  - name: ParameterA
+    type: string
+    displayName: "please insert parameter A"
+    default: 'default value'
+
+steps:
+  - task: PowerShell@2
+    displayName: Simple task
+    inputs:
+      targetType: inline
+      script: |
+        Write-Host "Simple task for simple stage pipeline"
+        Write-Host "Value for variable Configuration is $(configuration) value for parameterA is ${{ parameters.ParameterA }}"
+        Write-Host "Change Variable value configuration to 'debug'"
+        Write-Host "##vso[task.setvariable variable=configuration]debug"
+  
+  - task: PowerShell@2
+    displayName: Second simple task
+    inputs:
+      targetType: inline
+      script: |
+        Write-Host "Value for variable Configuration is now $(configuration) value for parameterA is ${{ parameters.ParameterA }}"
