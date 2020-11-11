@@ -1,0 +1,82 @@
+# Built-test-staging-prod pipeline
+# Originally taken from https://github.com/MicrosoftDocs/pipelines-multistage
+# Only run against master
+trigger:
+- master
+
+# Don't run against PRs
+pr: none
+
+stages:
+- stage: first_stage
+  # variables:
+  #   - name: foo
+  #     value: InitialValue
+  #     readonly: false
+
+  jobs:
+  - job: build
+    displayName: Build Job
+    pool: default
+      
+    steps:
+    - task: PowerShell@2
+      inputs:
+        targetType: inline
+        script: |
+          # This creates the variable but remember $(xxx) notation gets evaluated at beginning
+          # of the taks
+          Write-Host "##vso[task.setvariable variable=foo]InitialValue"
+          Write-Host "Variable value is  ${{ variables.foo }} with bracket notation notation"
+      displayName: First Powershell task that creates variable
+
+    - powershell: |
+        # Here variable can be read with $(foo)
+        Write-Host "Variable value is $(foo) with dollar notation"
+        Write-Host "Variable value is  ${{ variables.foo }} with bracket notation notation"
+      name: "First_task"
+      displayName: "First simple powershell task"
+
+    # This simple powershell task use output commands to change value of foo
+    - powershell: |
+        Write-Host "About to change variable value to 'NewValue'"
+        Write-Host "##vso[task.setvariable variable=foo;isOutput=true]NewValue"
+        Write-Host "##vso[task.setvariable variable=foo]NewValue"
+
+        # Variable value is still unchanged 
+        Write-Host "Variable value is Now $(foo) with dollar notation"
+        Write-Host "Variable value is Now ${{ variables.foo }} with bracket notation notation"
+      displayName: "Change variable value"
+      name: ChangeVariableTask
+
+    - powershell: |
+        # Now variable is really changed
+        Write-Host "Variable value is Now $(foo) with dollar notation"
+        Write-Host "Variable value is Now ${{ variables.foo }} with bracket notation notation"
+      displayName: "Task after variable value changed"
+  
+  # Another job that depends on first job, it can read output variable.
+  - job: 
+    displayName: Another job 
+    dependsOn:
+      - build
+    variables:
+      fooFromPreviousJob: $[ dependencies.build.outputs['ChangeVariableTask.foo'] ]
+    steps:
+      # Avoid download code for this stage.
+      - checkout: none
+        
+      - powershell: |
+          Write-Host "In second job variable value $(fooFromPreviousJob)"
+
+- stage: second_stage
+  dependsOn: first_stage
+  jobs:
+  - job: run_tests
+    variables:
+      variableFromOtherStep:  $[ stageDependencies.first_stage.build.outputs['ChangeVariableTask.foo'] ] 
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+    - script: echo Variable value is $(variableFromOtherStep)
+ 

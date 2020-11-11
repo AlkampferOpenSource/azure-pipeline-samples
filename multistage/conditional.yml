@@ -1,4 +1,5 @@
 # Conditional pipeline
+# Originally taken from https://github.com/MicrosoftDocs/pipelines-multistage
 
 # Only run against master
 trigger:
