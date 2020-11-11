@@ -40,6 +40,14 @@ parameters:
     displayName: "please insert parameter A"
     default: 'default value'
 
+  - name: Configuration
+    type: string
+    displayName: "Build configuration (release, debug ..)"
+    default: Release
+    values:
+      - Release
+      - Debug
+
 steps:
   - task: PowerShell@2
     displayName: Simple task
